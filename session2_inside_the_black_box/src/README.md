@@ -72,9 +72,24 @@ rebuild.
 **Hands-on (Colab):** [`Autoencoder_colab.ipynb`](Autoencoder_colab.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lobaton/AI-Workshop-UNTRM/blob/main/session2_inside_the_black_box/src/Autoencoder_colab.ipynb):
 detect faults with your own settings and location, and (extra) clean noisy bean-leaf images.
 
-## Part 5: Transformers — attention, proteins and DNA
+## Part 5: Transformers — attention, DNA and proteins
 
-*Coming soon.*
+**[`Attention.py`](Attention.py)** ·
+[Open in molab](https://molab.marimo.io/github/lobaton/AI-Workshop-UNTRM/blob/main/session2_inside_the_black_box/src/Attention.py)
+
+How every token looks at every other token, and why that helps with long-range relations.
+
+1. Attention by hand: "The animal didn't cross the street because it was too tired" (queries, keys, values,
+   softmax, two heads).
+2. Word order: attention alone cannot tell "dog bites man" from "man bites dog"; positional encoding fixes it.
+3. A tiny transformer on DNA: does the -35 box come before the -10 box? It succeeds where a CNN stays at chance,
+   and its attention map shows how.
+4. Tokens beyond words: image patches and amino acids; a protein language model (ESM-2) that learned which
+   amino acids touch in the folded protein.
+5. Scale: from our tiny model to today's largest models.
+
+**Hands-on (Colab):** [`Attention_colab.ipynb`](Attention_colab.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lobaton/AI-Workshop-UNTRM/blob/main/session2_inside_the_black_box/src/Attention_colab.ipynb):
+train the DNA transformer with your own motifs and settings, and run ESM-2 on any protein you choose.
 
 ## Running the marimo notebooks on your own computer
 
@@ -93,7 +108,7 @@ from GitHub.
 
 | File or folder | Purpose |
 |---|---|
-| `cnn_common.py`, `rnn_common.py`, `ae_common.py` | Shared data loading, models and training code used by the marimo and Colab notebooks of each part. |
+| `cnn_common.py`, `rnn_common.py`, `ae_common.py`, `attention_common.py` | Shared data loading, models and training code used by the marimo and Colab notebooks of each part. |
 | [`data/`](data/) | Small datasets and pre-trained model weights loaded by the notebooks. See [`data/README.md`](data/README.md) for the dataset formats. |
 | [`tools/`](tools/) | One-time scripts that built the files in `data/`. |
 | `__marimo__/` | Created automatically by marimo; safe to ignore. |

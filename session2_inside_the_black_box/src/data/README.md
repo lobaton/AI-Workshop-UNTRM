@@ -156,3 +156,59 @@ a strong daily cycle, so adding the hour of day as `sin(2π·hour/24)` and `cos(
 NASA POWER (Prediction Of Worldwide Energy Resources), NASA Langley Research Center,
 <https://power.larc.nasa.gov/>, hourly API, community `AG`. NASA POWER data are freely available; please
 acknowledge NASA POWER when using them.
+
+---
+
+# `esm2_ubiquitin.npz`: ESM-2 attention and contact maps for ubiquitin
+
+Precomputed outputs of three sizes of the **ESM-2** protein language model on **human ubiquitin** (76 amino
+acids), together with the true contact map from its crystal structure. Built by `../tools/precompute_esm.py`,
+so the notebooks can show them without the `transformers` package or a model download.
+
+- **File size:** about 65 kB.
+- **Download URL:**
+  `https://raw.githubusercontent.com/lobaton/AI-Workshop-UNTRM/main/session2_inside_the_black_box/src/data/esm2_ubiquitin.npz`
+
+## Arrays in the file
+
+`M = 3` models, `L = 76` amino acids. Model index 0, 1, 2 = 8M, 35M and 150M parameters.
+
+| Key | dtype | Shape | Meaning |
+|---|---|---|---|
+| `sequence` | `str` | `()` | The protein sequence, one-letter amino-acid code |
+| `models` | `str` | `(M,)` | Hugging Face model names (`facebook/esm2_t6_8M_UR50D`, `facebook/esm2_t12_35M_UR50D`, `facebook/esm2_t30_150M_UR50D`) |
+| `params` | `int64` | `(M,)` | Number of parameters of each model |
+| `contacts` | `float16` | `(M, L, L)` | Predicted contact probability for every pair of positions (symmetric, 0–1) |
+| `true_contacts` | `uint8` | `(L, L)` | 1 if the two residues' Cβ atoms (Cα for glycine) are closer than 8 Å in PDB 1UBQ |
+| `precision` | `float64` | `(M,)` | Share of each model's top-L predicted pairs (at least 6 positions apart) that are true contacts |
+| `best_head` | `int64` | `(M, 2)` | 0-based (layer, head) of the attention head whose map best matches the true contacts |
+| `best_head_attention` | `float16` | `(M, L, L)` | That head's attention weights (row = position that looks, column = position looked at; rows sum to about 1) |
+
+Positions are 0-based (index 0 = the first amino acid, M). The start and end tokens of the ESM tokenizer are
+removed. The file contains no Python objects, so `np.load` works without `allow_pickle`.
+
+| Model | Parameters | Top-L contact precision |
+|---|---|---|
+| ESM-2 8M | 7.5 million | 34% |
+| ESM-2 35M | 33.5 million | 66% |
+| ESM-2 150M | 148 million | 78% |
+
+## Loading example (Python)
+
+```python
+import io, urllib.request
+import numpy as np
+
+URL = ("https://raw.githubusercontent.com/lobaton/AI-Workshop-UNTRM/main/"
+       "session2_inside_the_black_box/src/data/esm2_ubiquitin.npz")
+esm = np.load(io.BytesIO(urllib.request.urlopen(URL).read()))
+print(str(esm["sequence"]), esm["precision"])
+predicted = esm["contacts"][2].astype(float)   # 150M model, (76, 76)
+true = esm["true_contacts"]                   # (76, 76)
+```
+
+## Source and license
+
+ESM-2 models: Lin et al., "Evolutionary-scale prediction of atomic-level protein structure with a language
+model", *Science* 379 (2023); Meta AI, MIT license, via Hugging Face. Structure: PDB entry 1UBQ (Vijay-Kumar,
+Bugg and Cook, 1987), RCSB Protein Data Bank, data available under CC0.

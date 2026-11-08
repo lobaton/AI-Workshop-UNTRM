@@ -86,24 +86,6 @@ def _(at, np, plt):
         fig.tight_layout()
         return fig
 
-    def plot_order_summary(summaries, labels, use_position):
-        """Sentence summaries (average of the attention outputs) for two word orders."""
-        fig, ax = plt.subplots(figsize=(10, 4))
-        width = 0.38
-        x = np.arange(len(summaries[0]))
-        for i, (s, label, color) in enumerate(zip(summaries, labels, [BLUE, ORANGE])):
-            ax.bar(x + (i - 0.5) * width, s, width, color=color, label=label)
-        ax.set_xticks(x, [f"number {i + 1}" for i in x])
-        ax.axhline(0, color="black", linewidth=1)
-        ax.set_ylabel("Value")
-        same = np.allclose(summaries[0], summaries[1])
-        ax.set_title(("With" if use_position else "Without") + " positional encoding: the two summaries are "
-                     + ("IDENTICAL" if same else "different"))
-        ax.legend(fontsize=13)
-        ax.grid(True, axis="y", alpha=0.3)
-        fig.tight_layout()
-        return fig
-
     def plot_positional_encoding(n_positions=64, d=16):
         pe = at.sinusoidal_encoding(n_positions, d).numpy()
         fig, axes = plt.subplots(1, 2, figsize=(14, 4.2), gridspec_kw={"width_ratios": [3, 2]})
@@ -162,23 +144,25 @@ def _(at, np, plt):
     def plot_dna_attention(weights, seq, starts, head):
         """Attention map of one head (tokens x tokens) | the rows of the two motif tokens."""
         n = weights.shape[0]
-        fig, axes = plt.subplots(1, 2, figsize=(16, 6), gridspec_kw={"width_ratios": [1, 1.35]})
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6.8), gridspec_kw={"width_ratios": [1, 1.35]})
         ax = axes[0]
         ax.imshow(weights, cmap="Greys", vmin=0, vmax=min(1.0, weights.max()))
         for p, color in zip(starts, [ORANGE, BLUE]):
-            ax.axvline(p, color=color, linewidth=2)
-            ax.axhline(p, color=color, linewidth=2)
+            ax.axvline(p, color=color, linewidth=2, linestyle="--")
+            ax.axhline(p, color=color, linewidth=2, linestyle="--")
         ax.set_xlabel("Token being looked at")
         ax.set_ylabel("Token that looks")
         ax.set_title(f"Head {head}: attention map")
         ax = axes[1]
-        for p, color, name in zip(starts, [ORANGE, BLUE], ["motif A token", "motif B token"]):
-            ax.axvspan(p - 0.5, p + 0.5, color=color, alpha=0.3)
-            ax.plot(np.arange(n), weights[p], color=color, label=f"Where the {name} looks")
+        for p, color, name in zip(starts, [ORANGE, BLUE], ["A", "B"]):
+            ax.axvspan(p - 0.5, p + 0.5, color=color, alpha=0.3, label=f"Location of motif {name}")
+        for p, name, style in zip(starts, ["A", "B"], ["-", ":"]):
+            ax.plot(np.arange(n), weights[p], color="black", linestyle=style,
+                    label=f"Where the motif {name} token looks")
         ax.set_xlabel("Token position (each token = 6 letters starting here)")
         ax.set_ylabel("Attention weight")
         ax.set_title("Rows of the two motif tokens")
-        ax.legend(fontsize=12, loc="upper right")
+        ax.legend(fontsize=12, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2)
         ax.grid(True, alpha=0.3)
         fig.tight_layout()
         return fig
@@ -243,7 +227,6 @@ def _(at, np, plt):
         plot_dna_examples,
         plot_esm_attention,
         plot_learning,
-        plot_order_summary,
         plot_patches,
         plot_positional_encoding,
         plot_toy_attention,
@@ -279,31 +262,50 @@ def _(mo):
         mo.md(r"""
         ## Step 1: Attention by hand
 
-        Every word asks every other word: *how relevant are you to me?*
+        Every word asks every other word: *how relevant are you to me?* All of attention is one expression:
+
+        $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V$$
         """),
         mo.accordion({
             "More details: query, key and value": mo.md(r"""
-            Each word (token) gets three short lists of numbers:
+            Each word $i$ (a token) gets three short lists of numbers (vectors) of length $d$ (here $d = 4$):
 
-            - a **query** (Q): *what am I looking for?*
-            - a **key** (K): *what am I?*
-            - a **value** (V): *what do I pass on if someone looks at me?*
+            - a **query** $\mathbf{q}_i$: *what am I looking for?*
+            - a **key** $\mathbf{k}_i$: *what am I?*
+            - a **value** $\mathbf{v}_i$: *what do I pass on if someone looks at me?*
 
-            The **score** between two words is their query · key (multiply matching numbers and add up),
-            divided by √d, where d is the length of the lists (here 4) to keep the scores in a good range.
-            A **softmax** turns each row of scores into **weights** that are positive and add up to 100%.
-            The **output** of a word is the weighted mix of all the values.
+            Stacking them, one row per word, gives the matrices $Q$, $K$ and $V$. The computation has three
+            steps:
 
-            In a real transformer, the numbers come from the word's embedding multiplied by learned matrices
-            (Q = X·W_Q, K = X·W_K, V = X·W_V). Here we **write them by hand** with four readable features, so
-            you can check the result. In a real model, "it" also learns about "tired" or "wide" in an earlier
-            layer; here we give "it" that hint directly in its query.
+            **1. Score** of word $i$ looking at word $j$: multiply matching numbers, add up, divide by
+            $\sqrt{d}$ to keep the scores in a good range:
+
+            $$s_{ij} = \frac{\mathbf{q}_i \cdot \mathbf{k}_j}{\sqrt{d}} = \frac{1}{\sqrt{d}} \sum_{m=1}^{d} q_{im}\, k_{jm}$$
+
+            **2. Weights:** the softmax turns each row of scores into positive weights that add up to 1
+            (100%). The temperature $T$ of the slider divides the scores first ($T = 1$ is the standard
+            transformer; smaller $T$ sharpens, larger $T$ spreads):
+
+            $$a_{ij} = \frac{e^{s_{ij}/T}}{\sum_{l} e^{s_{il}/T}}, \qquad \sum_j a_{ij} = 1$$
+
+            **3. Output** of word $i$: the weighted mix of all the values:
+
+            $$\mathbf{o}_i = \sum_{j} a_{ij}\, \mathbf{v}_j$$
+
+            In a real transformer, the vectors come from the word embeddings $X$ multiplied by learned
+            matrices: $Q = X W_Q$, $K = X W_K$, $V = X W_V$. Here we **write them by hand** with four readable
+            features (living thing, place, pronoun, describing word), so you can check the result. In a real
+            model, "it" also learns about "tired" or "wide" in an earlier layer; here we give "it" that hint
+            directly in its query.
             """),
             "More details: tensor shapes": mo.md(r"""
-            With 11 words and lists of 4 numbers: Q, K and V each have shape **(11, 4)**. The scores
-            Q·Kᵀ have shape **(11, 11)**: one row per word that looks, one column per word looked at. The
-            weights have the same shape, and the output, weights · V, is again **(11, 4)**: one new list of
-            numbers per word, now mixed with its context.
+            With $n = 11$ words and $d = 4$ numbers per word:
+
+            $$Q, K, V \in \mathbb{R}^{11 \times 4} \;\longrightarrow\; \frac{Q K^\top}{\sqrt{d}} \in \mathbb{R}^{11 \times 11} \;\longrightarrow\; A = \text{softmax}(\cdot) \in \mathbb{R}^{11 \times 11} \;\longrightarrow\; A V \in \mathbb{R}^{11 \times 4}$$
+
+            The score matrix has one row per word that looks and one column per word looked at. The output
+            is again one vector of 4 numbers per word, now mixed with its context. With **several heads**,
+            each head $h$ has its own $W_Q^{(h)}, W_K^{(h)}, W_V^{(h)}$ and computes this in parallel.
             """),
         }),
     ])
@@ -372,11 +374,29 @@ def _(
     _row = look_word.value
     _show_scores = show_radio.value.startswith("Scores")
     _top = int(_weights[_row].argmax())
+
+    # The same computation written out with the actual numbers for the chosen word
+    def _vec(v):
+        return r"\left(" + ", ".join(f"{x:.2f}".rstrip("0").rstrip(".") for x in v) + r"\right)"
+
+    _wi, _wj, _T = rf"\text{{{_words[_row]}}}", rf"\text{{{_words[_top]}}}", temperature.value
+    if head_radio.value.startswith("Head 1"):
+        _score_line = (rf"s_{{{_wi},\,{_wj}}} = \frac{{\mathbf{{q}}_{{{_wi}}} \cdot \mathbf{{k}}_{{{_wj}}}}}{{\sqrt{{4}}}}"
+                       rf" = \frac{{{_vec(_Q[_row])} \cdot {_vec(_K[_top])}}}{{2}} = {_scores[_row, _top]:.2f}")
+    else:
+        _score_line = (rf"s_{{{_wi},\,{_wj}}} = {_scores[_row, _top]:.2f}"
+                       r"\quad\text{(head 2: score 3 for the previous word, 0 for all others, set by hand)}")
+    _sum = np.exp(_scores[_row] / _T).sum()
+    _weight_line = (rf"a_{{{_wi},\,{_wj}}} = \frac{{e^{{{_scores[_row, _top]:.2f}/{_T:.1f}}}}}"
+                    rf"{{\sum_l e^{{s_{{{_wi},l}}/{_T:.1f}}}}} = \frac{{{np.exp(_scores[_row, _top] / _T):.2f}}}"
+                    rf"{{{_sum:.2f}}} = {_weights[_row, _top]:.2f}")
+    _output_line = (rf"\mathbf{{o}}_{{{_wi}}} = \sum_j a_{{{_wi},j}}\, \mathbf{{v}}_j = {_vec(_output[_row])}")
     mo.vstack([
         plot_toy_attention(_words, _scores if _show_scores else _weights, _row, _output[_row], FEATURES,
                            _show_scores),
         mo.md(f"**'{_words[_row]}'** puts **{_weights[_row, _top]:.0%}** of its attention on "
-              f"**'{_words[_top]}'**. Shapes: Q, K, V (11, 4) → scores and weights (11, 11) → output (11, 4)."),
+              f"**'{_words[_top]}'**. The computation with the actual numbers:"),
+        mo.md(f"$${_score_line}$$\n\n$${_weight_line}$$\n\n$${_output_line}$$"),
     ])
     return
 
@@ -425,35 +445,15 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
-    position_switch = mo.ui.switch(value=False, label="Add positional encoding")
-    position_switch
-    return (position_switch,)
-
-
-@app.cell
-def _(at, np, plot_order_summary, position_switch, softmax_rows):
-    # Three words with simple embeddings, and fixed random query/key matrices
-    _emb = {"dog": [1, 0, 0, 0], "man": [0, 1, 0, 0], "bites": [0, 0, 1, 0]}
-    _rng = np.random.default_rng(0)
-    _Wq, _Wk = _rng.normal(size=(4, 4)), _rng.normal(size=(4, 4))
-    _pe = at.sinusoidal_encoding(3, 4).numpy()
-
-    def _summary(words):
-        x = np.array([_emb[w] for w in words], dtype=float)
-        if position_switch.value:
-            x = x + _pe  # add the position pattern to each word
-        weights = softmax_rows((x @ _Wq) @ (x @ _Wk).T / 2)
-        return (weights @ x).mean(axis=0)  # average of the outputs = sentence summary
-
-    plot_order_summary([_summary(["dog", "bites", "man"]), _summary(["man", "bites", "dog"])],
-                       ["dog bites man", "man bites dog"], position_switch.value)
-    return
-
-
-@app.cell
 def _(mo, plot_positional_encoding):
-    mo.accordion({"Show the positional encoding": plot_positional_encoding()})
+    mo.vstack([
+        plot_positional_encoding(),
+        mo.md("**Left:** each column is the pattern added to the token at that position (64 positions, 16 "
+              "numbers each; red = positive, blue = negative). The top rows change quickly from one position to "
+              "the next, the bottom rows slowly, so no two columns are the same. **Right:** three of those rows "
+              "drawn as curves: sine waves of different speeds, like the hands of a clock. Together they tell "
+              "the model where each token is."),
+    ])
     return
 
 
@@ -494,7 +494,10 @@ def _(at, mo, plot_dna_examples):
     _seqs, _labels, _starts = dna["test"]
     _pick = [int((_labels == 1).argmax()), int((_labels == 0).argmax())]
     mo.vstack([
-        mo.md(f"Every sequence has {_seqs.shape[1]} letters. Two examples from the test set:"),
+        mo.md(f"**The data**, generated here at random with a fixed seed: **{len(dna['train'][1]):,} training**, "
+              f"**{len(dna['validation'][1]):,} validation** and **{len(dna['test'][1]):,} test** sequences, each "
+              f"**{_seqs.shape[1]} letters** long (half in each class). The models learn only from the training "
+              "sequences; the test sequences are used once, to measure accuracy. Two examples from the test set:"),
         plot_dna_examples(_seqs[_pick], _starts[_pick], _labels[_pick]),
     ])
     return (dna,)
@@ -527,7 +530,7 @@ def _(mo):
     mo.vstack([
         mo.md(r"""
         **Train Model** trains the transformer and the CNN live; **Load Pre-trained** loads both trained
-        longer beforehand.
+        longer beforehand (shown when the notebook opens).
         """),
         mo.accordion({
             "More details: the network and the training": mo.md(r"""
@@ -585,13 +588,11 @@ def _(
     train_button,
     use_position,
 ):
-    mo.stop(
-        not (train_button.value or pretrained_button.value),
-        mo.md("*Press **Train Model** or **Load Pre-trained** to get the networks.*"),
-    )
     _x, _y, _ = dna["train"]
     _xv, _yv, _ = dna["validation"]
-    if pretrained_button.value:
+    # Pre-trained by default (when the notebook opens or Load Pre-trained is pressed); Train Model trains live
+    pretrained_button  # pressing it re-runs this cell
+    if not train_button.value:
         tt_model, tt_history = load_pretrained("transformer" if use_position.value else "transformer_no_position",
                                                at.fetch)
         cnn_model, cnn_history = load_pretrained("cnn", at.fetch)
@@ -647,7 +648,10 @@ def _(mo):
         mo.accordion({
             "More details: reading the attention map": mo.md(r"""
             Each row is one token that "looks", each column a token being looked at; darker means more
-            attention. A dark **column** means many tokens look at that position. The plot on the right shows
+            attention. Every token is a 6-letter piece of the sequence, so there are 64 - 6 + 1 = 59 tokens.
+            The dashed orange lines cross at the motif A token and the dashed blue lines at the motif B token.
+            A dark **column** means many tokens look at that position: if it sits on a colored vertical line,
+            the whole sequence is looking at that motif. The plot on the right shows
             only the two motif rows. The network was never told where the motifs are, yet it learns to focus
             on them. In the models we trained, the two heads **split the work**: one looks almost only at
             motif A, the other at motif B (which head takes which motif changes from one training run to the
@@ -669,15 +673,7 @@ def _(mo):
 
 
 @app.cell
-def _(
-    at,
-    dna,
-    dna_example,
-    dna_head,
-    mo,
-    plot_dna_attention,
-    tt_model,
-):
+def _(at, dna, dna_example, dna_head, mo, plot_dna_attention, tt_model):
     _xt, _yt, _st = dna["test"]
     _p = at.predict(tt_model, _xt)
     _i = dna_example.value - 1
@@ -691,6 +687,10 @@ def _(
               f"({max(_p[_i], 1 - _p[_i]):.0%} confident). On average, head {_head} puts **{_on_a:.0%}** of "
               f"each token's attention on motif A and **{_on_b:.0%}** on motif B."),
         plot_dna_attention(_weights, _xt[_i], _st[_i], _head),
+        mo.md("**Left:** gray squares are attention weights (black = high). The dashed **orange** lines mark the "
+              "motif A token and the dashed **blue** lines the motif B token: the vertical line is the column "
+              "(the motif being looked at), the horizontal line is the row (the motif token doing the looking). "
+              "**Right:** the black curves are the two motif rows; the shaded bands show where the motifs are."),
     ])
     return
 
@@ -734,11 +734,31 @@ def _(mo):
         mo.md(r"""
         ### Proteins: what does a protein language model look at?
 
-        **ESM-2** read millions of protein sequences, one amino acid per token. Without ever seeing a
-        structure, some of its attention heads follow which amino acids **touch** in the folded protein.
-        Here: **ubiquitin** (76 amino acids).
+        **ESM-2** is a published protein language model from Meta AI (Lin et al., *Science*, 2023), trained
+        on about 65 million protein sequences, one amino acid per token. Without ever seeing a structure, some
+        of its attention heads follow which amino acids **touch** in the folded protein. Here: **ubiquitin**
+        (76 amino acids).
         """),
         mo.accordion({
+            "More details: where ESM-2 comes from": mo.md(r"""
+            ESM-2 ("Evolutionary Scale Modeling") was built by the protein team of Meta's Fundamental AI
+            Research lab and published by Lin et al. (2023) in *Science*. The goal was to test whether a
+            language model trained **only on protein sequences** learns enough biology to predict a protein's
+            3D structure. The same paper introduced **ESMFold**, which predicts full 3D structures from ESM-2's
+            internal representations, and the **ESM Metagenomic Atlas** with more than 617 million predicted
+            structures of proteins from environmental samples.
+
+            - **Training data:** protein sequences from **UniRef** (UniProt Reference Clusters, September 2021
+              release), a public database of known protein sequences grouped by similarity. Training samples
+              evenly across about 43 million clusters (UniRef50), drawing from about 138 million sequences
+              (UniRef90), so the model sees about 65 million different sequences.
+            - **Training task:** 15% of the amino acids of each sequence are hidden (*masked*) and the model
+              predicts them from the rest. No structures and no labels are used.
+            - **Sizes:** from 8 million parameters (6 layers) to 15 billion parameters (48 layers). The
+              weights are freely available, which is why we can run them here and in Colab.
+            - **Contact maps:** following Rao et al. (2021), a simple logistic regression combines the
+              attention maps of all heads into the contact prediction shown below.
+            """),
             "More details: how ESM-2 learned": mo.md(r"""
             *Remember the autoencoder's encoder?* ESM-2 is a transformer **encoder** trained much like the
             denoising autoencoder: some amino acids in each sequence are **hidden**, and the model must fill
@@ -748,15 +768,17 @@ def _(mo):
             embedding per amino acid instead of one small bottleneck.
 
             This is the idea of **pre-training**: train once on huge data, then reuse or adapt the model for
-            many tasks (structure, function, effects of mutations). DNABERT does the same for DNA and Vision
-            Transformers for images. Session 3 shows how to use such pre-trained models in code.
+            many tasks (structure, function, effects of mutations). **DNABERT** (Ji et al., 2021) does the same
+            for DNA, pre-trained on the human genome with 6-mer tokens like ours, and **Vision Transformers**
+            (Dosovitskiy et al., 2021) do it for images. Session 3 shows how to use such pre-trained models in code.
 
             The maps were computed beforehand for three sizes of ESM-2 and are loaded from the workshop
             repository. **True contacts:** pairs of amino acids closer than 8 Å in the crystal structure
             (PDB 1UBQ). The attention map shown is averaged in both directions (i looks at j, and j looks at
-            i). AlphaFold builds on the same idea, with much more data and a module that turns the contacts
-            into 3D coordinates. Try the hands-on Colab notebook to run ESM-2 on your own protein and explore
-            every layer and head.
+            i). ESMFold turns ESM-2's representations into 3D coordinates. **AlphaFold 2** (Jumper et al., 2021)
+            reaches the same goal differently: its attention layers read an alignment of many related sequences
+            together with the protein. Try the hands-on Colab notebook to run ESM-2 on your own protein and
+            explore every layer and head.
             """)
         }),
     ])
@@ -849,6 +871,42 @@ def _(mo):
     1. What would a **token** be in your own data (field images, sensor readings, sequences)?
     2. Why can a transformer relate two distant motifs more easily than the RNN from Part 3?
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "References": mo.md(r"""
+        - **Transformer:** Vaswani, A., et al. (2017). Attention is all you need. *Advances in Neural
+          Information Processing Systems 30* (NIPS 2017). [arXiv:1706.03762](https://arxiv.org/abs/1706.03762)
+        - **Vision Transformer:** Dosovitskiy, A., et al. (2021). An image is worth 16x16 words: Transformers
+          for image recognition at scale. *ICLR 2021*. [arXiv:2010.11929](https://arxiv.org/abs/2010.11929)
+        - **DNABERT:** Ji, Y., Zhou, Z., Liu, H., & Davuluri, R. V. (2021). DNABERT: pre-trained Bidirectional
+          Encoder Representations from Transformers model for DNA-language in genome. *Bioinformatics*,
+          37(15), 2112–2120. [doi:10.1093/bioinformatics/btab083](https://doi.org/10.1093/bioinformatics/btab083)
+        - **ESM-2 and ESMFold:** Lin, Z., Akin, H., Rao, R., Hie, B., Zhu, Z., Lu, W., Smetanin, N., Verkuil, R.,
+          Kabeli, O., Shmueli, Y., dos Santos Costa, A., Fazel-Zarandi, M., Sercu, T., Candido, S., & Rives, A.
+          (2023). Evolutionary-scale prediction of atomic-level protein structure with a language model.
+          *Science*, 379(6637), 1123–1130. [doi:10.1126/science.ade2574](https://doi.org/10.1126/science.ade2574)
+        - **Contacts from attention:** Rao, R., Meier, J., Sercu, T., Ovchinnikov, S., & Rives, A. (2021).
+          Transformer protein language models are unsupervised structure learners. *ICLR 2021*. Preprint:
+          [doi:10.1101/2020.12.15.422761](https://doi.org/10.1101/2020.12.15.422761)
+        - **AlphaFold 2:** Jumper, J., et al. (2021). Highly accurate protein structure prediction with
+          AlphaFold. *Nature*, 596(7873), 583–589.
+          [doi:10.1038/s41586-021-03819-2](https://doi.org/10.1038/s41586-021-03819-2)
+        - **GPT-2:** Radford, A., Wu, J., Child, R., Luan, D., Amodei, D., & Sutskever, I. (2019). Language
+          models are unsupervised multitask learners. OpenAI technical report.
+        - **GPT-3:** Brown, T. B., et al. (2020). Language models are few-shot learners. *Advances in Neural
+          Information Processing Systems 33* (NeurIPS 2020). [arXiv:2005.14165](https://arxiv.org/abs/2005.14165)
+        - **Transformer Explainer:** Cho, A., Kim, G. C., Karpekov, A., Helbling, A., Wang, Z. J., Lee, S.,
+          Hoover, B., & Chau, D. H. (2024). Transformer Explainer: Interactive learning of text-generative
+          models. *IEEE VIS 2024*. [arXiv:2408.04619](https://arxiv.org/abs/2408.04619)
+        - **Ubiquitin structure (PDB 1UBQ):** Vijay-Kumar, S., Bugg, C. E., & Cook, W. J. (1987). Structure of
+          ubiquitin refined at 1.8 Å resolution. *Journal of Molecular Biology*, 194(3), 531–544.
+          [doi:10.1016/0022-2836(87)90679-6](https://doi.org/10.1016/0022-2836(87)90679-6)
+        """)
+    })
     return
 
 

@@ -678,7 +678,7 @@ def _(mo):
     mo.vstack([
         mo.md(r"""
         **Train Model** trains a new LSTM with the settings above; **Load Pre-trained** loads one trained
-        longer beforehand.
+        longer beforehand (shown when the notebook opens).
         """),
         mo.accordion({
             "More details: live training vs. pre-trained": mo.md(r"""
@@ -713,12 +713,10 @@ def _(
     weather,
     windows,
 ):
-    mo.stop(
-        not (train_button.value or pretrained_button.value),
-        mo.md("*Press **Train Model** or **Load Pre-trained** to get a network.*"),
-    )
 
-    if pretrained_button.value:
+    # Pre-trained by default (when the notebook opens or Load Pre-trained is pressed); Train Model trains live
+    pretrained_button  # pressing it re-runs this cell
+    if not train_button.value:
         _ckpt = torch.load(rc.fetch(rc.WEIGHTS_FILE), map_location="cpu", weights_only=False)
         _cfg = _ckpt["config"]
         rnn_fc = rc.Forecaster(weather, _cfg["target"], _cfg["inputs"], _cfg["history"], _cfg["horizon"],
@@ -899,6 +897,39 @@ def _(mo):
     1. Does a longer history always help? Try 24 hours and 120 hours.
     2. When does the LSTM beat the baselines by the most: 1 hour ahead or 24 hours ahead? Why?
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "References": mo.md(r"""
+        - **Recurrent networks:** Elman, J. L. (1990). Finding structure in time. *Cognitive Science*, 14(2),
+          179–211. [doi:10.1207/s15516709cog1402_1](https://doi.org/10.1207/s15516709cog1402_1)
+        - **Training an unrolled network:** Werbos, P. J. (1990). Backpropagation through time: what it does and
+          how to do it. *Proceedings of the IEEE*, 78(10), 1550–1560.
+          [doi:10.1109/5.58337](https://doi.org/10.1109/5.58337)
+        - **LSTM:** Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. *Neural Computation*,
+          9(8), 1735–1780. [doi:10.1162/neco.1997.9.8.1735](https://doi.org/10.1162/neco.1997.9.8.1735)
+        - **The forget gate:** Gers, F. A., Schmidhuber, J., & Cummins, F. (2000). Learning to forget: Continual
+          prediction with LSTM. *Neural Computation*, 12(10), 2451–2471.
+          [doi:10.1162/089976600300015015](https://doi.org/10.1162/089976600300015015)
+        - **Forecasting and simple baselines:** Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting:
+          principles and practice*, 3rd edition. OTexts: Melbourne, Australia. [otexts.com/fpp3](https://otexts.com/fpp3/)
+        - **Positional encoding (looking ahead):** Vaswani, A., et al. (2017). Attention is all you need.
+          *Advances in Neural Information Processing Systems 30* (NIPS 2017).
+          [arXiv:1706.03762](https://arxiv.org/abs/1706.03762)
+        - **Adam optimizer:** Kingma, D. P., & Ba, J. (2015). Adam: A method for stochastic optimization.
+          *ICLR 2015*. [arXiv:1412.6980](https://arxiv.org/abs/1412.6980)
+        - **Weather data:** NASA POWER (Prediction Of Worldwide Energy Resources), hourly API, community AG,
+          Chachapoyas (-6.23, -77.87), 2023–2024, accessed November 2026. The data was obtained from the
+          National Aeronautics and Space Administration (NASA) Langley Research Center's POWER project funded
+          through the NASA Earth Science Division. [power.larc.nasa.gov](https://power.larc.nasa.gov/)
+        - **PyTorch** (the library used to build and train the networks): Paszke, A., et al. (2019). PyTorch:
+          An imperative style, high-performance deep learning library. *Advances in Neural Information
+          Processing Systems 32* (NeurIPS 2019). [arXiv:1912.01703](https://arxiv.org/abs/1912.01703)
+        """)
+    })
     return
 
 

@@ -229,8 +229,8 @@ def _(mo):
     mo.md(r"""
     ## Step 3: Training
 
-    At first the network's weights are random, so its guesses are random too. When you press
-    **Train Model**, it repeats a simple loop:
+    At first the network's weights are random, so its guesses are random too. Training repeats a simple
+    loop:
 
     1. **Guess** the class of a small batch of training points.
     2. **Measure** how wrong the guesses were. This error score is called the **loss**.
@@ -238,9 +238,9 @@ def _(mo):
 
     One full pass through all the training points is called an **epoch**. We train for **20 epochs**.
 
-    *Note: pressing **Train Model** again continues training the same network from where it left off.
-    Pressing **Reset Model** throws away everything learned and starts over from a new set of random
-    weights; press **Train Model** afterwards to train the fresh network.*
+    *Note: the network is trained once (20 epochs) when the notebook opens. Pressing **Train Model**
+    continues training the same network from where it left off. Pressing **Reset Model** throws away
+    everything learned and trains a fresh network, starting from a new set of random weights.*
     """)
     return
 
@@ -266,7 +266,8 @@ def _(
     y_test,
     y_train,
 ):
-    mo.stop(not run_button.value)
+    # Runs once when the notebook opens; pressing Train Model trains the same network for 20 more epochs
+    run_button
 
     # Convert NumPy arrays to torch tensors
     X_train_t = torch.from_numpy(X_train).float()
@@ -326,7 +327,7 @@ def _(
             f"**Test Recall:** {test_recall:.2%}"
         )
     ])
-    return
+    return (test_accuracy,)
 
 
 @app.cell(hide_code=True)
@@ -374,8 +375,8 @@ def _(mo):
 
 
 @app.cell
-def _(X, mlp_model, mo, nn, plt, run_button, torch, y):
-    mo.stop(not run_button.value)
+def _(X, mlp_model, nn, plt, test_accuracy, torch, y):
+    test_accuracy  # wait until training has finished
 
     # Compute hidden representations from the last hidden layer (2‑D) for the entire dataset
     # Extract the sub‑network up to the last hidden ReLU (includes Linear → ReLU)
@@ -446,12 +447,37 @@ def _(mo):
     ### Things to try
 
     - Press **Train Model** several times and watch how the learning curve and the hidden-layer plot change.
-    - Press **Reset Model**, then **Train Model**, a few times and compare the hidden-layer plots
-      that different random starting points produce.
+    - Press **Reset Model** a few times and compare the hidden-layer plots that different random
+      starting points produce.
     - Move the **Samples per class** slider to use more or fewer points, then retrain. Does less data
       make learning harder?
     - Compare the hidden-layer plot from a poorly trained network (high loss) with a well trained one.
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "References": mo.md(r"""
+        - **Backpropagation:** Rumelhart, D. E., Hinton, G. E., & Williams, R. J. (1986). Learning
+          representations by back-propagating errors. *Nature*, 323(6088), 533–536.
+          [doi:10.1038/323533a0](https://doi.org/10.1038/323533a0)
+        - **ReLU:** Nair, V., & Hinton, G. E. (2010). Rectified linear units improve restricted Boltzmann
+          machines. *Proceedings of the 27th International Conference on Machine Learning (ICML 2010)*,
+          807–814.
+        - **Adam optimizer:** Kingma, D. P., & Ba, J. (2015). Adam: A method for stochastic optimization.
+          *ICLR 2015*. [arXiv:1412.6980](https://arxiv.org/abs/1412.6980)
+        - **Book:** Goodfellow, I., Bengio, Y., & Courville, A. (2016). *Deep Learning*. MIT Press.
+          [deeplearningbook.org](https://www.deeplearningbook.org/)
+        - **scikit-learn** (the two-moons data, the train/test split, precision and recall): Pedregosa, F., et al.
+          (2011). Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research*, 12,
+          2825–2830. [jmlr.org/papers/v12/pedregosa11a](https://jmlr.org/papers/v12/pedregosa11a.html)
+        - **PyTorch** (the library used to build and train the networks): Paszke, A., et al. (2019). PyTorch:
+          An imperative style, high-performance deep learning library. *Advances in Neural Information
+          Processing Systems 32* (NeurIPS 2019). [arXiv:1912.01703](https://arxiv.org/abs/1912.01703)
+        """)
+    })
     return
 
 

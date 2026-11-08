@@ -521,7 +521,7 @@ def _(mo):
     mo.vstack([
         mo.md(r"""
         **Train Model** trains a new autoencoder with the settings above; **Load Pre-trained** loads one
-        trained longer beforehand.
+        trained longer beforehand (shown when the notebook opens).
         """),
         mo.accordion({
             "More details: live training vs. pre-trained": mo.md(r"""
@@ -571,11 +571,9 @@ def _(
     x_train,
     x_val,
 ):
-    mo.stop(
-        not (train_button.value or pretrained_button.value),
-        mo.md("*Press **Train Model** or **Load Pre-trained** to get a network.*"),
-    )
-    if pretrained_button.value:
+    # Pre-trained by default (when the notebook opens or Load Pre-trained is pressed); Train Model trains live
+    pretrained_button  # pressing it re-runs this cell
+    if not train_button.value:
         ae_model, ae_history = load_pretrained(4, rc.fetch)
         ae_source = f"pre-trained autoencoder (bottleneck 4, {len(ae_history['train_loss'])} epochs)"
     else:
@@ -848,6 +846,46 @@ def _(mo):
     1. How would you choose the threshold for a real sensor network in the field?
     2. What does a false alarm cost on a farm, compared with a missed fault?
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "References": mo.md(r"""
+        - **PCA:** Pearson, K. (1901). On lines and planes of closest fit to systems of points in space. *The
+          London, Edinburgh, and Dublin Philosophical Magazine and Journal of Science*, 2(11), 559–572.
+          [doi:10.1080/14786440109462720](https://doi.org/10.1080/14786440109462720)
+        - **Linear autoencoders learn the PCA summary:** Baldi, P., & Hornik, K. (1989). Neural networks and
+          principal component analysis: Learning from examples without local minima. *Neural Networks*, 2(1),
+          53–58. [doi:10.1016/0893-6080(89)90014-2](https://doi.org/10.1016/0893-6080(89)90014-2)
+        - **Deep autoencoders:** Hinton, G. E., & Salakhutdinov, R. R. (2006). Reducing the dimensionality of
+          data with neural networks. *Science*, 313(5786), 504–507.
+          [doi:10.1126/science.1127647](https://doi.org/10.1126/science.1127647)
+        - **Denoising autoencoders:** Vincent, P., Larochelle, H., Bengio, Y., & Manzagol, P.-A. (2008).
+          Extracting and composing robust features with denoising autoencoders. *Proceedings of the 25th
+          International Conference on Machine Learning (ICML 2008)*, 1096–1103.
+          [doi:10.1145/1390156.1390294](https://doi.org/10.1145/1390156.1390294)
+        - **Anomaly detection with autoencoders:** Sakurada, M., & Yairi, T. (2014). Anomaly detection using
+          autoencoders with nonlinear dimensionality reduction. *Proceedings of the MLSDA 2014 2nd Workshop on
+          Machine Learning for Sensory Data Analysis*, 4–11.
+          [doi:10.1145/2689746.2689747](https://doi.org/10.1145/2689746.2689747)
+        - **Transposed convolutions:** Dumoulin, V., & Visin, F. (2016). A guide to convolution arithmetic for
+          deep learning. [arXiv:1603.07285](https://arxiv.org/abs/1603.07285)
+        - **ESM-2 (looking ahead):** Lin, Z., et al. (2023). Evolutionary-scale prediction of atomic-level
+          protein structure with a language model. *Science*, 379(6637), 1123–1130.
+          [doi:10.1126/science.ade2574](https://doi.org/10.1126/science.ade2574)
+        - **Adam optimizer:** Kingma, D. P., & Ba, J. (2015). Adam: A method for stochastic optimization.
+          *ICLR 2015*. [arXiv:1412.6980](https://arxiv.org/abs/1412.6980)
+        - **Weather data:** NASA POWER (Prediction Of Worldwide Energy Resources), hourly API, community AG,
+          Chachapoyas (-6.23, -77.87), 2023–2024, accessed November 2026. The data was obtained from the
+          National Aeronautics and Space Administration (NASA) Langley Research Center's POWER project funded
+          through the NASA Earth Science Division. [power.larc.nasa.gov](https://power.larc.nasa.gov/)
+        - **PyTorch** (the library used to build and train the networks): Paszke, A., et al. (2019). PyTorch:
+          An imperative style, high-performance deep learning library. *Advances in Neural Information
+          Processing Systems 32* (NeurIPS 2019). [arXiv:1912.01703](https://arxiv.org/abs/1912.01703)
+        """)
+    })
     return
 
 

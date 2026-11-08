@@ -1,4 +1,4 @@
-# Session 2: Inside the Black Box
+# Session 2 — Inside the Black Box: Foundations of Deep Learning
 
 How neural networks work inside, and the main architectures: convolutional networks (CNNs), recurrent networks
 (RNNs), autoencoders and transformers. Examples come from agriculture, microscopy and genomics.

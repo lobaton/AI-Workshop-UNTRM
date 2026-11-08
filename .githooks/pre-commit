@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Refresh the molab preview outputs (__marimo__/session/<notebook>.py.json) of every staged marimo notebook,
+# so the static previews linked from the READMEs show up-to-date results. See .githooks/README.md.
+set -e
+
+# git hooks do not activate conda: use $MARIMO if set, else the ai-workshop env, else marimo on the PATH
+MARIMO="${MARIMO:-$HOME/miniconda3/envs/ai-workshop/bin/marimo}"
+[ -x "$MARIMO" ] || MARIMO="$(command -v marimo || true)"
+if [ -z "$MARIMO" ]; then
+    echo "pre-commit: marimo not found; set MARIMO=/path/to/marimo or commit with --no-verify" >&2
+    exit 1
+fi
+
+# Staged .py files that are marimo notebooks (skips *_common.py and tools/ scripts)
+notebooks=$(git diff --cached --name-only --diff-filter=ACM -- '*.py' | while read -r f; do
+    grep -q "marimo.App(" "$f" 2>/dev/null && echo "$f"
+done)
+[ -z "$notebooks" ] && exit 0
+
+for nb in $notebooks; do
+    echo "pre-commit: running $nb to refresh its preview outputs..."
+    if ! "$MARIMO" export session "$nb" --force-overwrite --no-sandbox; then
+        echo "pre-commit: $nb failed to run; commit stopped (use 'git commit --no-verify' to skip)" >&2
+        exit 1
+    fi
+    git add "$(dirname "$nb")/__marimo__/session/$(basename "$nb").json"
+done

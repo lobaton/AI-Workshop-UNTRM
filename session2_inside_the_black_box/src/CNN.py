@@ -601,7 +601,7 @@ def _(mo):
         ### Training
 
         **Train Model** trains the network live; **Load Pre-trained** loads the same network trained longer
-        beforehand.
+        beforehand. The pre-trained network is shown when the notebook opens.
         """),
         mo.accordion({
             "More details: live training vs. pre-trained": mo.md(r"""
@@ -639,12 +639,10 @@ def _(
     y_train_np,
     y_val_np,
 ):
-    mo.stop(
-        not (train_button.value or pretrained_button.value),
-        mo.md("*Press **Train Model** or **Load Pre-trained** to get a network.*"),
-    )
 
-    if pretrained_button.value:
+    # Pre-trained by default (when the notebook opens or Load Pre-trained is pressed); Train Model trains live
+    pretrained_button  # pressing it re-runs this cell
+    if not train_button.value:
         _ckpt = torch.load(cc.fetch(cc.WEIGHTS_FILE), map_location="cpu", weights_only=False)
         cnn_model = cc.BeansCNN(_ckpt["n_filters"])
         cnn_model.load_state_dict(_ckpt["state_dict"])
@@ -886,6 +884,36 @@ def _(mo):
     *Want to explore more?* Try the interactive [CNN Explainer](https://poloclub.github.io/cnn-explainer/)
     from Georgia Tech.
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "References": mo.md(r"""
+        - **Convolutional networks:** LeCun, Y., Bottou, L., Bengio, Y., & Haffner, P. (1998). Gradient-based
+          learning applied to document recognition. *Proceedings of the IEEE*, 86(11), 2278–2324.
+          [doi:10.1109/5.726791](https://doi.org/10.1109/5.726791)
+        - **Deep CNNs with ReLU, max pooling and data augmentation (AlexNet):** Krizhevsky, A., Sutskever, I., &
+          Hinton, G. E. (2012). ImageNet classification with deep convolutional neural networks. *Advances in
+          Neural Information Processing Systems 25* (NIPS 2012). Republished in *Communications of the ACM*,
+          60(6), 84–90 (2017). [doi:10.1145/3065386](https://doi.org/10.1145/3065386)
+        - **ReLU:** Nair, V., & Hinton, G. E. (2010). Rectified linear units improve restricted Boltzmann
+          machines. *Proceedings of the 27th International Conference on Machine Learning (ICML 2010)*,
+          807–814.
+        - **Global average pooling:** Lin, M., Chen, Q., & Yan, S. (2014). Network in network. *ICLR 2014*.
+          [arXiv:1312.4400](https://arxiv.org/abs/1312.4400)
+        - **Adam optimizer:** Kingma, D. P., & Ba, J. (2015). Adam: A method for stochastic optimization.
+          *ICLR 2015*. [arXiv:1412.6980](https://arxiv.org/abs/1412.6980)
+        - **Bean-leaf images:** Makerere AI Lab, in collaboration with the National Crops Resources Research
+          Institute (NaCRRI), Uganda (2020). *ibean: bean disease dataset* (healthy, angular leaf spot, bean
+          rust; MIT license). [github.com/AI-Lab-Makerere/ibean](https://github.com/AI-Lab-Makerere/ibean);
+          also on Hugging Face as `AI-Lab-Makerere/beans`.
+        - **PyTorch** (the library used to build and train the networks): Paszke, A., et al. (2019). PyTorch:
+          An imperative style, high-performance deep learning library. *Advances in Neural Information
+          Processing Systems 32* (NeurIPS 2019). [arXiv:1912.01703](https://arxiv.org/abs/1912.01703)
+        """)
+    })
     return
 
 

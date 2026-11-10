@@ -7,6 +7,12 @@ deployed. The example is counting nematodes under the microscope (the Nema-AI pr
 - [`Slides.pdf`](Slides.pdf): slides for the session.
 - [`HandsOn/`](HandsOn/): the workflow built during the session.
 
+## Data
+
+The hands-on uses a dataset for visual nematode detection:
+[`nematode_yolo.zip`](https://drive.google.com/file/d/1cdMcoLGnJxZ4wyi4F4NM8O8auxCKUw3K/view?usp=sharing)
+(Google Drive, about 52 MB). Download it and unzip it before the session.
+
 ## Parts
 
 1. **The task and the data (15 min).** Nematodes under the microscope: why counting by hand is a bottleneck, and

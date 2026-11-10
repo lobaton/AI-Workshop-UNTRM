@@ -5,13 +5,15 @@ model drafts the labels, experts correct them, and a small detector is trained, 
 deployed. The example is counting nematodes under the microscope (the Nema-AI project of NC State and NCDA&CS).
 
 - [`Slides.pdf`](Slides.pdf): slides for the session.
-- [`HandsOn/`](HandsOn/): the workflow built during the session.
+- [`Nematode_Dataset_Preparation.pdf`](Nematode_Dataset_Preparation.pdf): how the Labelbox export is
+  prepared as a 1,000-crop YOLO dataset, including filtering, class mapping, crop generation, and splits.
 
 ## Data
 
-The hands-on uses a dataset for visual nematode detection:
+The session uses a visual nematode detection dataset with 1,000 512×512 crops and two classes:
+nematode heads and cysts. Download the dataset and unzip it before the session:
 [`nematode_yolo.zip`](https://drive.google.com/file/d/1cdMcoLGnJxZ4wyi4F4NM8O8auxCKUw3K/view?usp=sharing)
-(Google Drive, about 52 MB). Download it and unzip it before the session.
+(Google Drive, about 52 MB).
 
 ## Parts
 

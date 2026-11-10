@@ -1,0 +1,63 @@
+{
+  "config": {
+    "seed": 42,
+    "epochs": 20,
+    "patience": 5,
+    "batch_size": 16,
+    "threads": 4,
+    "head_lr": 0.001,
+    "backbone_lr": 0.0001,
+    "weight_decay": 0.01
+  },
+  "dataset": "/mnt/c/Users/edgar/Source/AI-Workshop-UNTRM/session2_inside_the_black_box/src/data/beans128.npz",
+  "dataset_sha256": "cfb52c6ad88a7d33d60eee9ecfe29903811fca780ff95617337935e39e564ff0",
+  "split_class_counts": {
+    "train": [
+      345,
+      348,
+      341
+    ],
+    "validation": [
+      44,
+      45,
+      44
+    ],
+    "test": [
+      43,
+      43,
+      42
+    ]
+  },
+  "class_names": [
+    "angular_leaf_spot",
+    "bean_rust",
+    "healthy"
+  ],
+  "models": {
+    "efficientnet_b0": "EfficientNet_B0_Weights.IMAGENET1K_V1",
+    "resnet18": "ResNet18_Weights.IMAGENET1K_V1",
+    "mobilenet_v3_large": "MobileNet_V3_Large_Weights.IMAGENET1K_V2"
+  },
+  "versions": {
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130",
+    "torchvision": "0.28.0+cu130",
+    "numpy": "2.5.1",
+    "pillow": "12.0.0",
+    "sklearn": "1.9.0"
+  },
+  "preprocessing": {
+    "efficientnet_b0": {
+      "train": "Compose(\n    RandomHorizontalFlip(p=0.5)\n    RandomRotation(degrees=[-10.0, 10.0], interpolation=bilinear, expand=False, fill=0)\n    ColorJitter(brightness=(0.9, 1.1), contrast=None, saturation=None, hue=None)\n    ImageClassification(\n    crop_size=[224]\n    resize_size=[256]\n    mean=[0.485, 0.456, 0.406]\n    std=[0.229, 0.224, 0.225]\n    interpolation=InterpolationMode.BICUBIC\n)\n)",
+      "evaluation": "ImageClassification(\n    crop_size=[224]\n    resize_size=[256]\n    mean=[0.485, 0.456, 0.406]\n    std=[0.229, 0.224, 0.225]\n    interpolation=InterpolationMode.BICUBIC\n)"
+    },
+    "resnet18": {
+      "train": "Compose(\n    RandomHorizontalFlip(p=0.5)\n    RandomRotation(degrees=[-10.0, 10.0], interpolation=bilinear, expand=False, fill=0)\n    ColorJitter(brightness=(0.9, 1.1), contrast=None, saturation=None, hue=None)\n    ImageClassification(\n    crop_size=[224]\n    resize_size=[256]\n    mean=[0.485, 0.456, 0.406]\n    std=[0.229, 0.224, 0.225]\n    interpolation=InterpolationMode.BILINEAR\n)\n)",
+      "evaluation": "ImageClassification(\n    crop_size=[224]\n    resize_size=[256]\n    mean=[0.485, 0.456, 0.406]\n    std=[0.229, 0.224, 0.225]\n    interpolation=InterpolationMode.BILINEAR\n)"
+    },
+    "mobilenet_v3_large": {
+      "train": "Compose(\n    RandomHorizontalFlip(p=0.5)\n    RandomRotation(degrees=[-10.0, 10.0], interpolation=bilinear, expand=False, fill=0)\n    ColorJitter(brightness=(0.9, 1.1), contrast=None, saturation=None, hue=None)\n    ImageClassification(\n    crop_size=[224]\n    resize_size=[232]\n    mean=[0.485, 0.456, 0.406]\n    std=[0.229, 0.224, 0.225]\n    interpolation=InterpolationMode.BILINEAR\n)\n)",
+      "evaluation": "ImageClassification(\n    crop_size=[224]\n    resize_size=[232]\n    mean=[0.485, 0.456, 0.406]\n    std=[0.229, 0.224, 0.225]\n    interpolation=InterpolationMode.BILINEAR\n)"
+    }
+  }
+}

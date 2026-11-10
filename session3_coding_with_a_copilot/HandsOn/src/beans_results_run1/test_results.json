@@ -1,0 +1,53 @@
+{
+  "winner": {
+    "model": "resnet18",
+    "variant": "fine_tuned",
+    "checkpoint": "resnet18_fine_tuned.pt"
+  },
+  "test": {
+    "accuracy": 0.9453125,
+    "macro_f1": 0.9454382209460493,
+    "per_class": {
+      "angular_leaf_spot": {
+        "precision": 0.8775510204081632,
+        "recall": 1.0,
+        "f1": 0.9347826086956522,
+        "support": 43
+      },
+      "bean_rust": {
+        "precision": 0.9736842105263158,
+        "recall": 0.8604651162790697,
+        "f1": 0.9135802469135802,
+        "support": 43
+      },
+      "healthy": {
+        "precision": 1.0,
+        "recall": 0.9761904761904762,
+        "f1": 0.9879518072289156,
+        "support": 42
+      }
+    },
+    "confusion_matrix": [
+      [
+        43,
+        0,
+        0
+      ],
+      [
+        6,
+        37,
+        0
+      ],
+      [
+        0,
+        1,
+        41
+      ]
+    ],
+    "loss": 0.19816678087227046,
+    "accuracy_95_percent_wilson_interval": [
+      0.8914150997002529,
+      0.9732597986186536
+    ]
+  }
+}
